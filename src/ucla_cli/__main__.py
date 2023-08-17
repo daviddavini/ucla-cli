@@ -19,14 +19,15 @@ def soc(args):
         #title = soup.find(id=course_id+'-title').contents[0]
         print(data['SubjectAreaCode'], data['CatalogNumber'], sep='\t')
 
-parser = ArgumentParser()
-subparsers = parser.add_subparsers(dest='subparser', required=True)
-parser_soc = subparsers.add_parser('classes', help='Search the Schedule of Classes')
-parser_soc.add_argument('term')
-parser_soc.add_argument('-s', '--subject', help='Subject Area to search classes for')
-args = parser.parse_args()
+def main():
+    parser = ArgumentParser()
+    subparsers = parser.add_subparsers(dest='subparser', required=True)
+    parser_soc = subparsers.add_parser('classes', help='Search the Schedule of Classes')
+    parser_soc.add_argument('term')
+    parser_soc.add_argument('-s', '--subject', help='Subject Area to search classes for')
+    args = parser.parse_args()
 
-match args.subparser:
-    case 'classes':
-        soc(args)
+    match args.subparser:
+        case 'classes':
+            soc(args)
 

@@ -27,9 +27,12 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Documentation = "https://github.com/unknown/ucla-cli#readme"
-Issues = "https://github.com/unknown/ucla-cli/issues"
-Source = "https://github.com/unknown/ucla-cli"
+Documentation = "https://github.com/daviddavini/ucla-cli#readme"
+Issues = "https://github.com/daviddavini/ucla-cli/issues"
+Source = "https://github.com/daviddavini/ucla-cli"
+
+[project.scripts]
+ucla = "ucla_cli:main"
 
 [tool.hatch.version]
 path = "src/ucla_cli/__about__.py"
