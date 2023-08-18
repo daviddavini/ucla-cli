@@ -12,8 +12,8 @@ def get_course_summary(model):
                 {
                     "enrollment_status": "O,W,C,X,T,S",
                     "advanced": "y",
-                    "meet_days": "M,W,R,F",
-                    "start_time": "9:00 am",
+                    "meet_days": "M,T,W,R,F",
+                    "start_time": "8:00 am",
                     "end_time": "8:00 pm",
                     "meet_locations": None,
                     "meet_units": None,
