@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .__main__ import main
+from ucla_cli.__main__ import main
