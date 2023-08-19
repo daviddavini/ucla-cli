@@ -3,8 +3,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-
-def get_course_summary(model):
+def get_course_summary(model): 
     params = {
         "model": [json.dumps(model)],
         "FilterFlags": [
@@ -27,11 +26,16 @@ def get_course_summary(model):
                 }
             )
         ],
-        #"_": ["1692258949331"],
+        "_": ["1692258949331"],
     }
     url = "https://sa.ucla.edu/ro/public/soc/Results/GetCourseSummary"
     resp = requests.get(url, params)
     soup = BeautifulSoup(resp.text, "html.parser")
+    error = soup.find(class_='expanded-error-message')
+    if error:
+        raise Exception(error.text)
+    if not soup.text:
+        raise Exception
     return soup
 
 
