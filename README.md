@@ -10,6 +10,7 @@ UCLA CLI is a command-line tool for scraping data from UCLA's website, such as:
 - Course enrollment info (spots left, waitlists, etc.)
 - and more! (whatever else I decide to add)
 
+![image](https://github.com/daviddavini/ucla-cli/assets/22968625/813a61af-0b55-4a1c-aece-f7c279eb7bb6)
 
 Why would you ever want this?
 - *Scriptability* - Web browsers are notoriously unscriptable, forcing you to go through tedious routines
