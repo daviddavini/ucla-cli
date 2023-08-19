@@ -82,7 +82,7 @@ def extract_course_data(soup):
 
 def soc(args):
     columns = [
-        Column("subj", "{}"),
+            Column("subj", "{:<7}"),
         Column("numb", "{:<5}"),
         Column("uni", "{:>3}"),
         Column("instructor", "{:<20}"),
