@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup, NavigableString
 from ucla_cli.get_course_summary import get_course_summary
 
 
+
 def extract_course_summary(soup):
     status_data = soup.find_all(class_="statusColumn")[1].find("p")
     return {
@@ -56,11 +57,34 @@ def clean_course_summary(data):
     return data
 
 
-def pretty_course_summary_line(data):
-    return "{:>3} {:<20} {:<10} {:>3}/{:<3} {:>+3d} {:5} {} {}".format(data["units"], data["instructor"], data["status"], data["num_enrolled"], data["total_spots"], data["num_available"], data["day"], data["time"], data["location"])
 
+class Column:
+    def __init__(self, name, fmt):
+        self.name = name
+        self.fmt = fmt
+    def header(self):
+        return self.fmt.format(self.name.upper())
+    def row(self, data):
+        return self.fmt.format(data)
 
 def soc(args):
+    columns = [
+        Column("subj", "{}"),
+        Column("numb", "{:<5}"),
+        Column("uni", "{:>3}"),
+        Column("instructor", "{:<20}"),
+        Column("status", "{:<15}"),
+        Column("enr", "{:>3}"),
+        Column("cap", "{:>3}"),
+        Column("ovr", "{:>3}"),
+        Column("days", "{:>6}"),
+        Column("times", "{:<22}"),
+        Column("location", "{:<31}"),
+        Column("title", "{}"),
+    ]
+    for c in columns:
+        print(c.header(), end=" ")
+    print(flush=True)
     # url = 'https://sa.ucla.edu/ro/public/soc/Results?SubjectAreaName=Mathematics+(MATH)&t=23F&sBy=subject&subj=MATH+++&catlg=&cls_no=&undefined=Go&btnIsInIndex=btn_inIndex'
     url = "https://sa.ucla.edu/ro/public/soc/Results?SubjectAreaName=Mathematics+(MATH)&t={}&sBy=subject&subj={}&catlg=&cls_no=&undefined=Go&btnIsInIndex=btn_inIndex"
     url = url.format(args.term, args.subject)
@@ -76,8 +100,10 @@ def soc(args):
         sum_soup = get_course_summary(model)
         data = extract_course_summary(sum_soup)
         data = clean_course_summary(data)
-        line = pretty_course_summary_line(data)
-        print(args.subject, number, line, title)
+        data = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
+        for c, d in zip(columns, data):
+            print(c.row(d), end=" ")
+        print(flush=True)
 
 
 def main():
