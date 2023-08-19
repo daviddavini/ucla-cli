@@ -36,12 +36,20 @@ pip install ucla-cli
 ucla classes 23F --subject MATH
 ```
 
-## Design Goals
+## Development
+
+### Design Goals
 
 - *Front-end* - This project just aims to be a front-end for UCLA's website, meaning faithfully retrieving the 
 user-facing data from the website in a similar manner/structure as the website provides it.
 - *Unix tool* - This project aims to be a "good" CLI by following the conventions/philosophy of (modern) Unix 
 command-line tools (in regards to option parsing, interactability, output format, etc.)
+
+### Related projects
+- Nathan Smith (creator of hotseat.io) has a 
+[post](https://nathansmith.io/posts/scraping-enrollment-data-from-the-ucla-registrar-part-one/#fnref:10)
+that describes scraping UCLA's course schedule. He uses the same scraping strategy but implemented in Go
+(with support for multiprocessing!).
 
 ## License
 
