@@ -56,10 +56,6 @@ def clean_course_summary(data):
     return data
 
 
-def pretty_course_name(subject, number):
-    return "{:<15}".format(subject + number.lstrip("0"))
-
-
 def pretty_course_summary_line(data):
     return "{:>3} {:<20} {:<10} {:>3}/{:<3} {:>+3d} {:5} {} {}".format(data["units"], data["instructor"], data["status"], data["num_enrolled"], data["total_spots"], data["num_available"], data["day"], data["time"], data["location"])
 
@@ -73,14 +69,15 @@ def soc(args):
     scripts = soup.find_all(string=re.compile("addCourse"))
     for _i, script in list(enumerate(scripts)):
         m = re.search(r"AddToCourseData\((.*),({.*})\)", script.string)
-        json.loads(m.group(1))
+        course_id = json.loads(m.group(1))
+        title = soup.find(id=course_id+'-title').contents[0]
+        number, name = title.split(" - ")
         model = json.loads(m.group(2))
-        name = pretty_course_name(model["SubjectAreaCode"], model["CatalogNumber"])
-        soup = get_course_summary(model)
-        data = extract_course_summary(soup)
+        sum_soup = get_course_summary(model)
+        data = extract_course_summary(sum_soup)
         data = clean_course_summary(data)
         line = pretty_course_summary_line(data)
-        print(name, line)
+        print(args.subject, number, line, title)
 
 
 def main():
