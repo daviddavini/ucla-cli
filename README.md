@@ -20,12 +20,6 @@ or empower you.
 using UCLA CLI in just a few lines!
 - *Hacker Vibes* - Be honest, you've been seeking a bit more terminal in your life.
 
-**Table of Contents**
-
-- [Installation](#installation)
-- [Getting Started](#installation)
-- [License](#license)
-
 ## Installation
 
 ```console
