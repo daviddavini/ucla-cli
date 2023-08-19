@@ -82,19 +82,22 @@ def extract_course_data(soup):
 
 def soc(args):
     columns = [
-            Column("subj", "{:<7}"),
+        Column("subj", "{:<7}"),
         Column("numb", "{:<5}"),
-        Column("uni", "{:>3}"),
-        Column("instructor", "{:<20}"),
-        Column("status", "{:<15}"),
-        Column("enr", "{:>3}"),
-        Column("cap", "{:>3}"),
-        Column("ovr", "{:>3}"),
-        Column("days", "{:>6}"),
-        Column("times", "{:<22}"),
-        Column("location", "{:<31}"),
-        Column("title", "{}"),
     ]
+    if args.course_details:
+        columns.extend([
+            Column("uni", "{:>3}"),
+            Column("instructor", "{:<20}"),
+            Column("status", "{:<15}"),
+            Column("enr", "{:>3}"),
+            Column("cap", "{:>3}"),
+            Column("ovr", "{:>3}"),
+            Column("days", "{:>6}"),
+            Column("times", "{:<22}"),
+            Column("location", "{:<31}"),
+        ])
+    columns.append(Column("title", "{}"))
     for c in columns:
         print(c.header(), end=" ")
     print(flush=True)
@@ -120,20 +123,24 @@ def soc(args):
         for course_id, model in models:
             title = soup.find(id=course_id+'-title').contents[0]
             number, name = title.split(" - ")
-            sum_soup = get_course_summary(model)
-            data = extract_course_summary(sum_soup)
-            data = clean_course_summary(data)
-            row = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
-            if data['status'] == 'Open':
-                color = 'green'
-            elif data['status'] == 'Waitlist':
-                color = 'yellow'
-            elif 'Closed' in data['status']:
-                color = 'red'
-            elif 'Cancelled' in data['status']:
-                color = 'dark_grey'
-            else:
-                color = None
+            if args.course_details:
+                sum_soup = get_course_summary(model)
+                data = extract_course_summary(sum_soup)
+                data = clean_course_summary(data)
+            row = [args.subject, number]
+            if args.course_details:
+                row.extend([data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location']])
+            row.append(name)
+            color = None
+            if args.course_details:
+                if data['status'] == 'Open':
+                    color = 'green'
+                elif data['status'] == 'Waitlist':
+                    color = 'yellow'
+                elif 'Closed' in data['status']:
+                    color = 'red'
+                elif 'Cancelled' in data['status']:
+                    color = 'dark_grey'
             for c, d in zip(columns, row):
                 cprint(c.row(d), color, end=" ")
             print(flush=True)
@@ -145,7 +152,9 @@ def main():
     parser_soc = subparsers.add_parser("classes", help="Search the Schedule of Classes")
     parser_soc.add_argument("term")
     parser_soc.add_argument("-s", "--subject", help="Subject Area to search classes for")
+    parser_soc.add_argument("-q", "--quiet", action='store_true', help="Just list course subject, name and title")
     args = parser.parse_args()
+    args.course_details = not args.quiet; del args.quiet
 
     if args.subparser == "classes":
         soc(args)
