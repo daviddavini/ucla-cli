@@ -1,3 +1,4 @@
+import html
 import json
 import re
 from argparse import ArgumentParser
@@ -99,11 +100,23 @@ def soc(args):
     print(flush=True)
     page = 1; last_page = False
     while not last_page:
-        #soup = results(args.term, args.subject)
-        text = course_titles_view(args.term, args.subject, page)
+        if page == 1:
+            text = results(args.term, args.subject)
+            subject_table = re.search(r"SearchPanelSetup\('(\[.*\])'.*\)", text)
+            subject_table = html.unescape(subject_table.group(1))
+            subject_table = json.loads(subject_table)
+            subject_table = {x['value']: x['label'] for x in subject_table}
+            search_data = re.search(r"SearchPanel\.SearchData = JSON\.stringify\(({.*})\)", text)
+            search_data = json.loads(search_data.group(1))
+            # correct the subject label after-the-fact, for next request
+            search_data['SubjectAreaName'] = subject_table[args.subject]
+        else:
+            text = course_titles_view(search_data, args.term, args.subject, page)
         last_page = False; page += 1
         soup = BeautifulSoup(text, 'html.parser')
         models = extract_course_data(soup)
+        if not models:
+            return
         for course_id, model in models:
             title = soup.find(id=course_id+'-title').contents[0]
             number, name = title.split(" - ")
