@@ -2,9 +2,10 @@ import json
 import re
 from argparse import ArgumentParser
 
-import requests
 from bs4 import BeautifulSoup, NavigableString
 
+from .results import results
+from .course_titles_view import course_titles_view
 from ucla_cli.get_course_summary import get_course_summary
 from termcolor import cprint
 
@@ -68,6 +69,16 @@ class Column:
     def row(self, data):
         return self.fmt.format(data)
 
+def extract_course_data(soup):
+    scripts = soup.find_all(string=re.compile("addCourse"))
+    models = []
+    for script in scripts:
+        m = re.search(r"AddToCourseData\((.*),({.*})\)", script.string)
+        course_id = json.loads(m.group(1))
+        model = json.loads(m.group(2))
+        models.append((course_id, model))
+    return models
+
 def soc(args):
     columns = [
         Column("subj", "{}"),
@@ -86,35 +97,33 @@ def soc(args):
     for c in columns:
         print(c.header(), end=" ")
     print(flush=True)
-    # url = 'https://sa.ucla.edu/ro/public/soc/Results?SubjectAreaName=Mathematics+(MATH)&t=23F&sBy=subject&subj=MATH+++&catlg=&cls_no=&undefined=Go&btnIsInIndex=btn_inIndex'
-    url = "https://sa.ucla.edu/ro/public/soc/Results?SubjectAreaName=Mathematics+(MATH)&t={}&sBy=subject&subj={}&catlg=&cls_no=&undefined=Go&btnIsInIndex=btn_inIndex"
-    url = url.format(args.term, args.subject)
-    resp = requests.get(url)
-    soup = BeautifulSoup(resp.text, "html.parser")
-    scripts = soup.find_all(string=re.compile("addCourse"))
-    for _i, script in list(enumerate(scripts)):
-        m = re.search(r"AddToCourseData\((.*),({.*})\)", script.string)
-        course_id = json.loads(m.group(1))
-        title = soup.find(id=course_id+'-title').contents[0]
-        number, name = title.split(" - ")
-        model = json.loads(m.group(2))
-        sum_soup = get_course_summary(model)
-        data = extract_course_summary(sum_soup)
-        data = clean_course_summary(data)
-        row = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
-        if data['status'] == 'Open':
-            color = 'green'
-        elif data['status'] == 'Waitlist':
-            color = 'yellow'
-        elif 'Closed' in data['status']:
-            color = 'red'
-        elif 'Cancelled' in data['status']:
-            color = 'dark_grey'
-        else:
-            color = None
-        for c, d in zip(columns, row):
-            cprint(c.row(d), color, end=" ")
-        print(flush=True)
+    page = 1; last_page = False
+    while not last_page:
+        #soup = results(args.term, args.subject)
+        text = course_titles_view(args.term, args.subject, page)
+        last_page = False; page += 1
+        soup = BeautifulSoup(text, 'html.parser')
+        models = extract_course_data(soup)
+        for course_id, model in models:
+            title = soup.find(id=course_id+'-title').contents[0]
+            number, name = title.split(" - ")
+            sum_soup = get_course_summary(model)
+            data = extract_course_summary(sum_soup)
+            data = clean_course_summary(data)
+            row = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
+            if data['status'] == 'Open':
+                color = 'green'
+            elif data['status'] == 'Waitlist':
+                color = 'yellow'
+            elif 'Closed' in data['status']:
+                color = 'red'
+            elif 'Cancelled' in data['status']:
+                color = 'dark_grey'
+            else:
+                color = None
+            for c, d in zip(columns, row):
+                cprint(c.row(d), color, end=" ")
+            print(flush=True)
 
 
 def main():
