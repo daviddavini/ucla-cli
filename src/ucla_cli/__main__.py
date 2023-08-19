@@ -22,13 +22,21 @@ def extract_course_summary(soup):
 
 
 def clean_status(status):
+    if status == ["Cancelled"]:
+        return 0, 0
     m = re.search(r"(\d+) of (\d+) Enrolled", status[1])
     if m:
         return int(m.group(1)), int(m.group(2))
+    m = re.search(r"Class Full \((\d+)\)", status[1])
+    if m:
+        return int(m.group(1)), 0
     m = re.search(r"Class Full \((\d+)\), Over Enrolled By (\d+)", status[1])
     if m:
         return int(m.group(1)) + int(m.group(2)), int(m.group(1))
-    return 0, 0
+    m = re.search(r"\((\d+) capacity, (\d+) enrolled, (\d+) waitlisted\)", status[1])
+    if m:
+        return int(m.group(2)), int(m.group(1))
+    raise ValueError
 
 
 def clean_course_summary(data):

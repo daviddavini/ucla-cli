@@ -27,7 +27,7 @@ def get_course_summary(model):
                 }
             )
         ],
-        "_": ["1692258949331"],
+        #"_": ["1692258949331"],
     }
     url = "https://sa.ucla.edu/ro/public/soc/Results/GetCourseSummary"
     resp = requests.get(url, params)
