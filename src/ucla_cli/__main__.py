@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString
 
 from ucla_cli.get_course_summary import get_course_summary
+from termcolor import cprint
 
 
 
@@ -100,9 +101,19 @@ def soc(args):
         sum_soup = get_course_summary(model)
         data = extract_course_summary(sum_soup)
         data = clean_course_summary(data)
-        data = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
-        for c, d in zip(columns, data):
-            print(c.row(d), end=" ")
+        row = [args.subject, number, data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location'], name]
+        if data['status'] == 'Open':
+            color = 'green'
+        elif data['status'] == 'Waitlist':
+            color = 'yellow'
+        elif 'Closed' in data['status']:
+            color = 'red'
+        elif 'Cancelled' in data['status']:
+            color = 'dark_grey'
+        else:
+            color = None
+        for c, d in zip(columns, row):
+            cprint(c.row(d), color, end=" ")
         print(flush=True)
 
 

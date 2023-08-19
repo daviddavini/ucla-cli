@@ -30,7 +30,8 @@ classifiers = [
 ]
 dependencies = [
   "requests",
-  "BeautifulSoup4"
+  "BeautifulSoup4",
+  "termcolor",
 ]
 
 [project.urls]
