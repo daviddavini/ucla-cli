@@ -6,8 +6,9 @@ from argparse import ArgumentParser
 from bs4 import BeautifulSoup, NavigableString
 from termcolor import cprint
 
-from ucla_cli.course_titles_view import course_titles_view
-from ucla_cli.get_course_summary import get_course_summary
+from .course_titles_view import course_titles_view
+from .get_course_summary import get_course_summary
+from .results import results
 
 
 def extract_course_summary(soup):
