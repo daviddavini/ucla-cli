@@ -6,9 +6,9 @@ from argparse import ArgumentParser
 from bs4 import BeautifulSoup, NavigableString
 from termcolor import cprint
 
-from .course_titles_view import course_titles_view
-from .get_course_summary import get_course_summary
-from .results import results
+from ucla_cli.course_titles_view import course_titles_view
+from ucla_cli.get_course_summary import get_course_summary
+from ucla_cli.results import results
 
 
 def extract_course_summary(soup):
@@ -60,6 +60,14 @@ def clean_waitlist(waitlist):
     raise ValueError
 
 
+def clean_day(day):
+    if day == "Not scheduled":
+        return ""
+    if day.upper() != day or " " in day:
+        raise ValueError
+    return "".join([c if c in day else "." for c in "UMTWRFS"])
+
+
 def clean_course_summary(data):
     num_enrolled, total_spots = clean_status(data["status"])
     num_waitlisted, waitlist_capacity = clean_waitlist(data["waitlist"])
@@ -68,10 +76,9 @@ def clean_course_summary(data):
             "status": data["status"][0],
             "num_enrolled": num_enrolled,
             "total_spots": total_spots,
-            "num_available": num_enrolled - total_spots,
             "num_waitlisted": num_waitlisted,
             "waitlist_capacity": waitlist_capacity,
-            "day": data["day"],
+            "day": clean_day(data["day"]),
             "time": data["time"],
             "location": data["location"],
             "units": data["units"],
@@ -105,8 +112,10 @@ def extract_course_data(soup):
 
 def soc(args):
     text = results()
+
     def reduce_subject(x):
         return x.replace(" ", "").lower()
+
     subject_table = re.search(r"SearchPanelSetup\('(\[.*\])'.*\)", text)
     subject_table = html.unescape(subject_table.group(1))
     subject_table = json.loads(subject_table)
@@ -126,10 +135,9 @@ def soc(args):
                 Column("status", "{:<15}"),
                 Column("enr", "{:>3}"),
                 Column("cap", "{:>3}"),
-                Column("ovr", "{:>3}"),
                 Column("wai", "{:>3}"),
                 Column("wcp", "{:>3}"),
-                Column("days", "{:>6}"),
+                Column("days", "{:<7}"),
                 Column("times", "{:<22}"),
                 Column("location", "{:<31}"),
             ]
@@ -164,7 +172,6 @@ def soc(args):
                         data["status"],
                         data["num_enrolled"],
                         data["total_spots"],
-                        data["num_available"],
                         data["num_waitlisted"],
                         data["waitlist_capacity"],
                         data["day"],
