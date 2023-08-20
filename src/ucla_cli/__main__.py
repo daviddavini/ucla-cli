@@ -23,6 +23,17 @@ def extract_course_summary(soup):
         "instructor": soup.find_all(class_="instructorColumn")[1].find("p").contents[0],
     }
 
+def clean_status_code(status_code):
+    return {
+        'Open': 'O',
+        'Waitlist': 'W',
+        'Closed': 'C',
+        'Closed by Dept ': 'C',
+        'Cancelled': 'X',
+        'Tentative': 'T',
+        'Not available': 'S',
+    }[status_code]
+
 
 def clean_status(status):
     if status == ["Cancelled"]:
@@ -67,20 +78,30 @@ def clean_day(day):
         raise ValueError
     return "".join([c if c in day else "." for c in "UMTWRFS"])
 
+def clean_instructor(instructor):
+    #if instructor == 'No instructors':
+    #    return ''
+    return instructor
+
+def clean_location(location):
+    #if location == "No Location":
+    #    return ''
+    return location
 
 def clean_course_summary(data):
     num_enrolled, total_spots = clean_status(data["status"])
     num_waitlisted, waitlist_capacity = clean_waitlist(data["waitlist"])
     data.update(
         {
-            "status": data["status"][0],
+            "status": clean_status_code(data["status"][0]),
             "num_enrolled": num_enrolled,
             "total_spots": total_spots,
             "num_waitlisted": num_waitlisted,
             "waitlist_capacity": waitlist_capacity,
             "day": clean_day(data["day"]),
             "time": data["time"],
-            "location": data["location"],
+            "location": clean_location(data["location"]),
+            "instructor": clean_instructor(data["instructor"]),
             "units": data["units"],
         }
     )
@@ -130,9 +151,7 @@ def soc(args):
     if args.course_details:
         columns.extend(
             [
-                Column("uni", "{:>3}"),
-                Column("instructor", "{:<20}"),
-                Column("status", "{:<15}"),
+                Column("s", "{:1}"),
                 Column("enr", "{:>3}"),
                 Column("cap", "{:>3}"),
                 Column("wai", "{:>3}"),
@@ -140,6 +159,8 @@ def soc(args):
                 Column("days", "{:<7}"),
                 Column("times", "{:<22}"),
                 Column("location", "{:<31}"),
+                Column("uni", "{:>3}"),
+                Column("instructor", "{:<20}"),
             ]
         )
     columns.append(Column("title", "{}"))
@@ -162,13 +183,12 @@ def soc(args):
             if args.course_details:
                 sum_soup = get_course_summary(model)
                 data = extract_course_summary(sum_soup)
+                orig_data = data.copy()
                 data = clean_course_summary(data)
             row = [subject, number]
             if args.course_details:
                 row.extend(
                     [
-                        data["units"],
-                        data["instructor"],
                         data["status"],
                         data["num_enrolled"],
                         data["total_spots"],
@@ -177,18 +197,20 @@ def soc(args):
                         data["day"],
                         data["time"],
                         data["location"],
+                        data["units"],
+                        data["instructor"],
                     ]
                 )
             row.append(name)
             color = None
             if args.course_details:
-                if data["status"] == "Open":
+                if "Open" in orig_data["status"]:
                     color = "green"
-                elif data["status"] == "Waitlist":
+                elif "Waitlist" in orig_data["status"]:
                     color = "yellow"
-                elif "Closed" in data["status"]:
+                elif "Closed" in orig_data["status"]:
                     color = "red"
-                elif "Cancelled" in data["status"]:
+                elif "Cancelled" in orig_data["status"]:
                     color = "dark_grey"
             for c, d in zip(columns, row):
                 cprint(c.row(d), color, end=" ")
