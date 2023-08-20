@@ -4,35 +4,38 @@ from urllib.parse import parse_qs
 import requests
 from bs4 import BeautifulSoup
 
+
 def _decode_url(url):
     url, params = url.split("?")
     params = parse_qs(params)
     params = {key: [json.loads(v) for v in value] for key, value in params.items()}
     return params
 
+
 def prep_params(params):
     return {key: [json.dumps(v) for v in value] for key, value in params.items()}
 
-def get_course_summary(model): 
+
+def get_course_summary(model):
     raw_params = {
         "model": [model],
         "FilterFlags": [
-                {
-                    "enrollment_status": "O,W,C,X,T,S",
-                    "advanced": "y",
-                    "meet_days": "M,T,W,R,F",
-                    "start_time": "8:00 am",
-                    "end_time": "8:00 pm",
-                    "meet_locations": None,
-                    "meet_units": None,
-                    "instructor": None,
-                    "class_career": None,
-                    "impacted": None,
-                    "enrollment_restrictions": None,
-                    "enforced_requisites": None,
-                    "individual_studies": "n",
-                    "summer_session": None,
-                }
+            {
+                "enrollment_status": "O,W,C,X,T,S",
+                "advanced": "y",
+                "meet_days": "M,T,W,R,F",
+                "start_time": "8:00 am",
+                "end_time": "8:00 pm",
+                "meet_locations": None,
+                "meet_units": None,
+                "instructor": None,
+                "class_career": None,
+                "impacted": None,
+                "enrollment_restrictions": None,
+                "enforced_requisites": None,
+                "individual_studies": "n",
+                "summer_session": None,
+            }
         ],
         "_": [1692258949331],
     }
@@ -42,10 +45,10 @@ def get_course_summary(model):
     soup = BeautifulSoup(resp.text, "html.parser")
     if not soup.text:
         raise Exception
-    error = soup.find(class_='expanded-error-message')
+    error = soup.find(class_="expanded-error-message")
     if error:
         raise Exception(error.text.strip())
-    error = soup.find(class_='error_section')
+    error = soup.find(class_="error_section")
     if error:
         raise Exception(error.text.strip())
     return soup
