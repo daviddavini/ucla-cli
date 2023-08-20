@@ -8,7 +8,6 @@ from termcolor import cprint
 
 from ucla_cli.course_titles_view import course_titles_view
 from ucla_cli.get_course_summary import get_course_summary
-from ucla_cli.results import results
 
 
 def extract_course_summary(soup):
@@ -105,15 +104,13 @@ def extract_course_data(soup):
 
 def soc(args):
     text = results()
-    reduce_subject = lambda x: x.replace(" ","").lower()
+    def reduce_subject(x):
+        return x.replace(" ", "").lower()
     subject_table = re.search(r"SearchPanelSetup\('(\[.*\])'.*\)", text)
     subject_table = html.unescape(subject_table.group(1))
     subject_table = json.loads(subject_table)
     subject_name_table = {reduce_subject(x["value"]): x["label"] for x in subject_table}
     subject_code_table = {reduce_subject(x["value"]): x["value"] for x in subject_table}
-    #search_data = re.search(r"SearchPanel\.SearchData = JSON\.stringify\(({.*})\)", text)
-    #search_data = json.loads(search_data.group(1))
-    # correct the subject label after-the-fact, for next request
     subject_name = subject_name_table[reduce_subject(args.subject)]
     subject = subject_code_table[reduce_subject(args.subject)]
     columns = [
@@ -143,10 +140,7 @@ def soc(args):
     page = 1
     last_page = False
     while not last_page:
-        if page == 1:
-            text = results(args.term, subject)
-        else:
-            text = course_titles_view(args.term, subject, subject_name, page)
+        text = course_titles_view(args.term, subject, subject_name, page)
         last_page = False
         page += 1
         soup = BeautifulSoup(text, "html.parser")

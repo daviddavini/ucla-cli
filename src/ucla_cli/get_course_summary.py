@@ -21,11 +21,11 @@ def get_course_summary(model):
         "model": [model],
         "FilterFlags": [
             {
-                "enrollment_status": "O,W,C,X,T,S",
-                "advanced": "y",
-                "meet_days": "M,T,W,R,F",
-                "start_time": "8:00 am",
-                "end_time": "8:00 pm",
+                "enrollment_status": None,
+                "advanced": None,
+                "meet_days": None,
+                "start_time": None,
+                "end_time": None,
                 "meet_locations": None,
                 "meet_units": None,
                 "instructor": None,
@@ -33,7 +33,7 @@ def get_course_summary(model):
                 "impacted": None,
                 "enrollment_restrictions": None,
                 "enforced_requisites": None,
-                "individual_studies": "n",
+                "individual_studies": None,
                 "summer_session": None,
             }
         ],
