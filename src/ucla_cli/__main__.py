@@ -28,12 +28,14 @@ def extract_course_summary(soup):
 def clean_status(status):
     if status == ["Cancelled"]:
         return 0, 0
+    if status == ["Waitlist"]:
+        return 0, 0
     m = re.search(r"(\d+) of (\d+) Enrolled", status[1])
     if m:
         return int(m.group(1)), int(m.group(2))
     m = re.search(r"Class Full \((\d+)\)", status[1])
     if m:
-        return int(m.group(1)), 0
+        return int(m.group(1)), int(m.group(1))
     m = re.search(r"Class Full \((\d+)\), Over Enrolled By (\d+)", status[1])
     if m:
         return int(m.group(1)) + int(m.group(2)), int(m.group(1))
@@ -42,15 +44,33 @@ def clean_status(status):
         return int(m.group(2)), int(m.group(1))
     raise ValueError
 
+def clean_waitlist(waitlist):
+    if waitlist == "No Waitlist":
+        return 0, 0
+    m = re.search(r"(\d+) of (\d+) Taken", waitlist)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    m = re.search(r"Waitlist Full \((\d+)\)", waitlist)
+    if m:
+        return int(m.group(1)), int(m.group(1))
+
+    m = re.search(r"(\d+) Waitlisted, Contact Instructor/Department", waitlist)
+    if m:
+        return int(m.group(1)), '?'
+    raise ValueError
+
 
 def clean_course_summary(data):
     num_enrolled, total_spots = clean_status(data["status"])
+    num_waitlisted, waitlist_capacity = clean_waitlist(data['waitlist'])
     data.update(
         {
             "status": data["status"][0],
             "num_enrolled": num_enrolled,
             "total_spots": total_spots,
             "num_available": num_enrolled - total_spots,
+            "num_waitlisted": num_waitlisted,
+            "waitlist_capacity": waitlist_capacity,
             "day": data["day"],
             "time": data["time"],
             "location": data["location"],
@@ -82,7 +102,7 @@ def extract_course_data(soup):
 
 def soc(args):
     columns = [
-        Column("subj", "{:<7}"),
+        Column("subject", "{:<7}"),
         Column("numb", "{:<5}"),
     ]
     if args.course_details:
@@ -93,6 +113,8 @@ def soc(args):
             Column("enr", "{:>3}"),
             Column("cap", "{:>3}"),
             Column("ovr", "{:>3}"),
+            Column("wai", "{:>3}"),
+            Column("wcp", "{:>3}"),
             Column("days", "{:>6}"),
             Column("times", "{:<22}"),
             Column("location", "{:<31}"),
@@ -129,7 +151,7 @@ def soc(args):
                 data = clean_course_summary(data)
             row = [args.subject, number]
             if args.course_details:
-                row.extend([data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['day'], data['time'], data['location']])
+                row.extend([data['units'], data['instructor'], data['status'], data['num_enrolled'], data['total_spots'], data['num_available'], data['num_waitlisted'], data['waitlist_capacity'], data['day'], data['time'], data['location']])
             row.append(name)
             color = None
             if args.course_details:
