@@ -9,6 +9,7 @@ from termcolor import cprint
 from ucla_cli.course_titles_view import course_titles_view
 from ucla_cli.get_course_summary import get_course_summary
 from ucla_cli.results import results
+from ucla_cli.clean import clean_course_summary
 
 def extract_location(soup):
     p = soup.find_all(class_="locationColumn")[1].find("p")
@@ -27,125 +28,6 @@ def extract_course_summary(soup):
         "units": soup.find_all(class_="unitsColumn")[1].find("p").contents[0],
         "instructor": soup.find_all(class_="instructorColumn")[1].find("p").contents[0],
     }
-
-def clean_time(time):
-    if time == []:
-        return ""
-    if time == ['To be arranged']:
-        return "?"
-    if time == ['-','-','-']:
-        return "?"
-    if len(time) % 2 != 0:
-        raise ValueError
-    intervals = zip(time[::2],time[1::2])
-    times = []
-    def parse_time(t):
-        m = re.match("(\d+):?(\d*)([pa])m", t)
-        if not m:
-            raise ValueError
-        h = int(m.group(1))
-        mins = m.group(2)
-        mins = int(mins if mins else 0)
-        p = 12 if (m.group(3)=='p' and h != 12) else 0
-        return h+p+mins/60
-    for start, end in intervals:
-        s = parse_time(start)
-        e = parse_time(end[1:])
-        s,e = [round(x) for x in [s,e]]
-        times.extend(list(range(s,e)))
-    return "".join(c if i in times else '.' for i, c in enumerate('89ABC1234567', 8))
-
-def clean_status_code(status_code):
-    return {
-        'Open': 'O',
-        'Waitlist': 'W',
-        'Closed': 'C',
-        'Closed by Dept ': 'C',
-        'Cancelled': 'X',
-        'Tentative': 'T',
-        'Not available': 'S',
-    }[status_code]
-
-
-def clean_status(status):
-    if status == ["Cancelled"]:
-        return 0, 0
-    if status == ["Waitlist"]:
-        return 0, 0
-    m = re.search(r"(\d+) of (\d+) Enrolled", status[1])
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    m = re.search(r"Class Full \((\d+)\)", status[1])
-    if m:
-        return int(m.group(1)), int(m.group(1))
-    m = re.search(r"Class Full \((\d+)\), Over Enrolled By (\d+)", status[1])
-    if m:
-        return int(m.group(1)) + int(m.group(2)), int(m.group(1))
-    m = re.search(r"\((\d+) capacity, (\d+) enrolled, (\d+) waitlisted\)", status[1])
-    if m:
-        return int(m.group(2)), int(m.group(1))
-    raise ValueError
-
-
-def clean_waitlist(waitlist):
-    if waitlist == "No Waitlist":
-        return 0, 0
-    m = re.search(r"(\d+) of (\d+) Taken", waitlist)
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    m = re.search(r"Waitlist Full \((\d+)\)", waitlist)
-    if m:
-        return int(m.group(1)), int(m.group(1))
-
-    m = re.search(r"(\d+) Waitlisted, Contact Instructor/Department", waitlist)
-    if m:
-        return int(m.group(1)), "?"
-    raise ValueError
-
-
-def clean_day(day):
-    if day == "Not scheduled":
-        return ""
-    if day == "Varies":
-        return day
-    if day.upper() != day or " " in day:
-        raise ValueError
-    return "".join([c if c in day else "." for c in "UMTWRFS"])
-
-def clean_instructor(instructor):
-    #if instructor == 'No instructors':
-    #    return ''
-    return instructor
-
-def clean_location(location, locations):
-    #if location == "No Location":
-    #    return ''
-    ms = {l: re.match(l, location) for l in locations}
-    matches = {l: m for l,m in ms.items() if m}
-    if len(matches) != 1:
-        raise ValueError
-    l, m = matches.popitem()
-    building, room = location[:m.end()], location[m.end():]
-    return locations[l] + room
-
-def clean_course_summary(data, filters):
-    num_enrolled, total_spots = clean_status(data["status"])
-    num_waitlisted, waitlist_capacity = clean_waitlist(data["waitlist"])
-    data.update(
-        {
-            "status": clean_status_code(data["status"][0]),
-            "num_enrolled": num_enrolled,
-            "total_spots": total_spots,
-            "num_waitlisted": num_waitlisted,
-            "waitlist_capacity": waitlist_capacity,
-            "day": clean_day(data["day"]),
-            "time": clean_time(data["time"]),
-            "location": clean_location(data["location"], filters['location']),
-            "instructor": clean_instructor(data["instructor"]),
-            "units": data["units"],
-        }
-    )
-    return data
 
 
 class Column:
@@ -234,7 +116,7 @@ def soc(args):
                 sum_soup = get_course_summary(model)
                 data = extract_course_summary(sum_soup)
                 orig_data = data.copy()
-                data = clean_course_summary(data, filters)
+                data = clean_course_summary(data, filters, args.mode)
             row = [subject, number]
             if args.course_details:
                 row.extend(
@@ -270,13 +152,15 @@ def soc(args):
 def main():
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(dest="subparser", required=True)
-    parser_soc = subparsers.add_parser("classes", help="Search the Schedule of Classes")
+    parser_soc = subparsers.add_parser("classes", help="Search the Schedule of Classes", conflict_handler="resolve")
     parser_soc.add_argument("term")
     parser_soc.add_argument("-s", "--subject", help="Subject Area to search classes for")
     parser_soc.add_argument("-q", "--quiet", action="store_true", help="Just list course subject, name and title")
+    parser_soc.add_argument("-h", "--human-readable", action="store_true")
     args = parser.parse_args()
     args.course_details = not args.quiet
     del args.quiet
+    args.mode = "plain" if args.human_readable else "hacker"
 
     if args.subparser == "classes":
         soc(args)
