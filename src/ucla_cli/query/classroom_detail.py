@@ -8,7 +8,11 @@ def classroom_detail(term, building_code, room_code):
         "classroom": "{}|{}".format(building_code, room_code),
     }
     resp = requests.get(url, params)
-    return resp.text
+    text = resp.text
+    error_msg = "Classroom not in use this quarter or the building has had a name change."
+    if error_msg in text:
+        raise Exception(error_msg)
+    return text
 
 if __name__ == "__main__":
     print(classroom_detail("23F", "KAPLAN  ", "  00348  "))
