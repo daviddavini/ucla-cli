@@ -150,11 +150,30 @@ def soc(args):
                 cprint(c.row(d), color, end=" ")
             print(flush=True)
 
+
+def bl(args):
+    text = query.building_list()
+    buildings = extract.building_list(text)
+    columns = [
+        Column("code", "{:<8}"),
+        Column("name", "{}"),
+    ]
+    for b in buildings:
+        row = [b['building_code'], b['building_name']]
+        for c, d in zip(columns, row):
+            print(c.row(d), end=" ")
+        print(flush=True)
+
+
 def cgs(args):
-    text = query.classroom_detail(args.term, args.building, args.room)
-    data = extract.calendar_data(text)
-    for x in data:
-        print("{}-{}".format(x['strt_time'], x['stop_time']), x['title'])
+    if not args.building:
+        bl(args)
+    else:
+        text = query.classroom_detail(args.term, args.building, args.room)
+        data = extract.calendar_data(text)
+        for x in data:
+            print("{}-{}".format(x['strt_time'], x['stop_time']), x['title'])
+        
 
 def main():
     parser = ArgumentParser()
