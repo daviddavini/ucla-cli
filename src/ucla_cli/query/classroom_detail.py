@@ -15,4 +15,5 @@ def classroom_detail(term, building_code, room_code):
     return text
 
 if __name__ == "__main__":
-    print(classroom_detail("23F", "KAPLAN  ", "  00348  "))
+    text = classroom_detail("23F", "KAPLAN  ", "  00348  ")
+    print(text)

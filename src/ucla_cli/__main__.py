@@ -6,6 +6,8 @@ from argparse import ArgumentParser
 from bs4 import BeautifulSoup, NavigableString
 from termcolor import cprint
 
+from ucla_cli import query
+from ucla_cli import extract
 from ucla_cli.course_titles_view import course_titles_view
 from ucla_cli.get_course_summary import get_course_summary
 from ucla_cli.results import results
@@ -148,6 +150,11 @@ def soc(args):
                 cprint(c.row(d), color, end=" ")
             print(flush=True)
 
+def cgs(args):
+    text = query.classroom_detail(args.term, args.building, args.room)
+    data = extract.calendar_data(text)
+    for x in data:
+        print("{}-{}".format(x['strt_time'], x['stop_time']), x['title'])
 
 def main():
     parser = ArgumentParser()
@@ -157,13 +164,19 @@ def main():
     parser_soc.add_argument("-s", "--subject", help="Subject Area to search classes for")
     parser_soc.add_argument("-q", "--quiet", action="store_true", help="Just list course subject, name and title")
     parser_soc.add_argument("-h", "--human-readable", action="store_true")
+    parser_room = subparsers.add_parser("rooms", help="Search the Classroom Grid Search", conflict_handler="resolve")
+    parser_room.add_argument("-t", "--term")
+    parser_room.add_argument("-b", "--building", help="Building to search schedule for")
+    parser_room.add_argument("-r", "--room", help="Room to search schedule for")
     args = parser.parse_args()
-    args.course_details = not args.quiet
-    del args.quiet
-    args.mode = "plain" if args.human_readable else "hacker"
 
     if args.subparser == "classes":
+        args.course_details = not args.quiet
+        del args.quiet
+        args.mode = "plain" if args.human_readable else "hacker"
         soc(args)
+    elif args.subparser == "rooms":
+        cgs(args)
 
 
 if __name__ == "__main__":
