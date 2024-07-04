@@ -180,15 +180,25 @@ def cgs(term, building, room):
 def ucla():
     pass
 
-@ucla.command(help="Search for classes offered in a term")
+@ucla.group(help="Search for classes offered in a term")
 @click.argument("term")
-@click.option("-s", "--subject", help="Subject Area code")
+@click.pass_context
+# @click.argument("search-criteria", type=click.Choice(["subject-area", "class-units", "class-id", "instructor", "general-education", 
+#                                                       "writing-2", "diversity", "college-honors", "fiat-lux", "community-engaged-learning", 
+#                                                       "law", "online-not-recorded", "online-recorded", "online-asynchronous",]))
 @click.option("-q", "--quiet", is_flag=True, help="Just list course subject, name and title")
 @click.option("-h", "--human-readable", is_flag=True)
-def classes(term, subject, quiet, human_readable):
-    course_details = not quiet
-    mode = "plain" if human_readable else "hacker"
-    soc(term, subject, course_details, mode)
+def classes(ctx, term, quiet, human_readable):
+    ctx.ensure_object(dict)
+    ctx.obj['TERM'] = term
+    ctx.obj['COURSE_DETAILS'] = not quiet
+    ctx.obj['MODE'] = "plain" if human_readable else "hacker"
+
+@classes.command()
+@click.argument("subject-area", type=str, required=True)
+@click.pass_context
+def subject_area(ctx, subject_area):
+    soc(ctx.obj['TERM'], subject_area, ctx.obj['COURSE_DETAILS'], ctx.obj['MODE'])
 
 @ucla.command()
 @click.argument("term")
@@ -199,4 +209,4 @@ def rooms(term, building, room):
 
 
 if __name__ == "__main__":
-    classes()
+    ucla()
