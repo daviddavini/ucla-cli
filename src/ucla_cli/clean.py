@@ -113,7 +113,7 @@ def clean_location(location, locations):
     ms = {l: re.match(l, location) for l in locations}
     matches = {l: m for l,m in ms.items() if m}
     if len(matches) != 1:
-        raise ValueError
+        return location
     l, m = matches.popitem()
     building, room = location[:m.end()], location[m.end():]
     return locations[l] + room
