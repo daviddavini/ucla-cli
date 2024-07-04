@@ -1,6 +1,7 @@
 import html
 import json
 import re
+import click
 from argparse import ArgumentParser
 
 from bs4 import BeautifulSoup, NavigableString
@@ -55,7 +56,7 @@ def extract_course_data(soup):
     return models
 
 
-def soc(args):
+def soc(term, subject, course_details, mode):
     text = results()
 
     def reduce_subject(x):
@@ -66,12 +67,12 @@ def soc(args):
     subject_table = json.loads(subject_table)
     subject_name_table = {reduce_subject(x["value"]): x["label"] for x in subject_table}
     subject_code_table = {reduce_subject(x["value"]): x["value"] for x in subject_table}
-    subject_name = subject_name_table[reduce_subject(args.subject)]
-    subject = subject_code_table[reduce_subject(args.subject)]
+    subject_name = subject_name_table[reduce_subject(subject)]
+    subject = subject_code_table[reduce_subject(subject)]
     # we call results() again with our "main search field"
     # this is just to get the filter options, not the course list
     # but we call course_titles_view() for purely unfiltered course list
-    text = results(args.term, subject)
+    text = results(term, subject)
     soup = BeautifulSoup(text, 'html.parser')
     locations = soup.select("#Location_options option")
     locations = {l.contents[0]: l['value'] for l in locations}
@@ -82,7 +83,7 @@ def soc(args):
         Column("subject", "{:<7}"),
         Column("numb", "{:<5}"),
     ]
-    if args.course_details:
+    if course_details:
         columns.extend(
             [
                 Column("s", "{:1}"),
@@ -104,7 +105,7 @@ def soc(args):
     page = 1
     last_page = False
     while not last_page:
-        text = course_titles_view(args.term, subject, subject_name, page)
+        text = course_titles_view(term, subject, subject_name, page)
         last_page = False
         page += 1
         soup = BeautifulSoup(text, "html.parser")
@@ -114,13 +115,13 @@ def soc(args):
         for course_id, model in models:
             title = soup.find(id=course_id + "-title").contents[0]
             number, name = title.split(" - ")
-            if args.course_details:
+            if course_details:
                 sum_soup = get_course_summary(model)
                 data = extract_course_summary(sum_soup)
                 orig_data = data.copy()
-                data = clean_course_summary(data, filters, args.mode)
+                data = clean_course_summary(data, filters, mode)
             row = [subject, number]
-            if args.course_details:
+            if course_details:
                 row.extend(
                     [
                         data["status"],
@@ -137,7 +138,7 @@ def soc(args):
                 )
             row.append(name)
             color = None
-            if args.course_details:
+            if course_details:
                 if "Open" in orig_data["status"]:
                     color = "green"
                 elif "Waitlist" in orig_data["status"]:
@@ -151,7 +152,7 @@ def soc(args):
             print(flush=True)
 
 
-def bl(args):
+def bl():
     text = query.building_list()
     buildings = extract.building_list(text)
     columns = [
@@ -165,38 +166,37 @@ def bl(args):
         print(flush=True)
 
 
-def cgs(args):
-    if not args.building:
-        bl(args)
+def cgs(term, building, room):
+    if not building:
+        bl()
     else:
-        text = query.classroom_detail(args.term, args.building, args.room)
+        text = query.classroom_detail(term, building, room)
         data = extract.calendar_data(text)
         for x in data:
             print("{}-{}".format(x['strt_time'], x['stop_time']), x['title'])
         
 
-def main():
-    parser = ArgumentParser()
-    subparsers = parser.add_subparsers(dest="subparser", required=True)
-    parser_soc = subparsers.add_parser("classes", help="Search the Schedule of Classes", conflict_handler="resolve")
-    parser_soc.add_argument("term")
-    parser_soc.add_argument("-s", "--subject", help="Subject Area to search classes for")
-    parser_soc.add_argument("-q", "--quiet", action="store_true", help="Just list course subject, name and title")
-    parser_soc.add_argument("-h", "--human-readable", action="store_true")
-    parser_room = subparsers.add_parser("rooms", help="Search the Classroom Grid Search", conflict_handler="resolve")
-    parser_room.add_argument("-t", "--term")
-    parser_room.add_argument("-b", "--building", help="Building to search schedule for")
-    parser_room.add_argument("-r", "--room", help="Room to search schedule for")
-    args = parser.parse_args()
+@click.group()
+def ucla():
+    pass
 
-    if args.subparser == "classes":
-        args.course_details = not args.quiet
-        del args.quiet
-        args.mode = "plain" if args.human_readable else "hacker"
-        soc(args)
-    elif args.subparser == "rooms":
-        cgs(args)
+@ucla.command(help="Search for classes offered in a term")
+@click.argument("term")
+@click.option("-s", "--subject", help="Subject Area code")
+@click.option("-q", "--quiet", is_flag=True, help="Just list course subject, name and title")
+@click.option("-h", "--human-readable", is_flag=True)
+def classes(term, subject, quiet, human_readable):
+    course_details = not quiet
+    mode = "plain" if human_readable else "hacker"
+    soc(term, subject, course_details, mode)
+
+@ucla.command()
+@click.argument("term")
+@click.option("-b", "--building", help="Building code")
+@click.option("-r", "--room", help="Room number")
+def rooms(term, building, room):
+    cgs(term, building, room)
 
 
 if __name__ == "__main__":
-    main()
+    classes()

@@ -32,6 +32,7 @@ dependencies = [
   "requests",
   "BeautifulSoup4",
   "termcolor",
+  "click",
 ]
 
 [project.urls]
@@ -40,7 +41,7 @@ Issues = "https://github.com/daviddavini/ucla-cli/issues"
 Source = "https://github.com/daviddavini/ucla-cli"
 
 [project.scripts]
-ucla = "ucla_cli:main"
+ucla = "ucla_cli:ucla"
 
 [tool.hatch.version]
 path = "src/ucla_cli/__about__.py"
