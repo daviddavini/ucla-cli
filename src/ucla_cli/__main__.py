@@ -10,6 +10,7 @@ from termcolor import cprint
 from ucla_cli import query
 from ucla_cli import extract
 from ucla_cli.course_titles_view import course_titles_view
+from ucla_cli.display.kv_sections import display_buildings, display_course
 from ucla_cli.get_course_summary import get_course_summary
 from ucla_cli.results import results
 from ucla_cli.clean import clean_course_summary
@@ -31,19 +32,6 @@ def extract_course_summary(soup):
         "units": soup.find_all(class_="unitsColumn")[1].find("p").contents[0],
         "instructor": soup.find_all(class_="instructorColumn")[1].find("p").contents[0],
     }
-
-
-class Column:
-    def __init__(self, name, fmt):
-        self.name = name
-        self.fmt = fmt
-
-    def header(self):
-        return self.fmt.format(self.name.upper())
-
-    def row(self, data):
-        return self.fmt.format(data)
-
 
 def extract_course_data(soup):
     scripts = soup.find_all(string=re.compile("addCourse"))
@@ -79,29 +67,6 @@ def soc(term, subject, course_details, mode):
     filters = {
         'location': locations
     }
-    columns = [
-        Column("subject", "{:<7}"),
-        Column("numb", "{:<5}"),
-    ]
-    if course_details:
-        columns.extend(
-            [
-                Column("s", "{:1}"),
-                Column("enr", "{:>3}"),
-                Column("cap", "{:>3}"),
-                Column("wai", "{:>3}"),
-                Column("wcp", "{:>3}"),
-                Column("days", "{:<7}"),
-                Column("times", "{:<13}"),
-                Column("location", "{:<14}"),
-                Column("uni", "{:>3}"),
-                Column("instructor", "{:<20}"),
-            ]
-        )
-    columns.append(Column("title", "{}"))
-    for c in columns:
-        print(c.header(), end=" ")
-    print(flush=True)
     page = 1
     last_page = False
     while not last_page:
@@ -120,50 +85,15 @@ def soc(term, subject, course_details, mode):
                 data = extract_course_summary(sum_soup)
                 orig_data = data.copy()
                 data = clean_course_summary(data, filters, mode)
-            row = [subject, number]
-            if course_details:
-                row.extend(
-                    [
-                        data["status"],
-                        data["num_enrolled"],
-                        data["total_spots"],
-                        data["num_waitlisted"],
-                        data["waitlist_capacity"],
-                        data["day"],
-                        data["time"],
-                        data["location"],
-                        data["units"],
-                        data["instructor"],
-                    ]
-                )
-            row.append(name)
-            color = None
-            if course_details:
-                if "Open" in orig_data["status"]:
-                    color = "green"
-                elif "Waitlist" in orig_data["status"]:
-                    color = "yellow"
-                elif "Closed" in orig_data["status"]:
-                    color = "red"
-                elif "Cancelled" in orig_data["status"]:
-                    color = "dark_grey"
-            for c, d in zip(columns, row):
-                cprint(c.row(d), color, end=" ")
-            print(flush=True)
-
+            else:
+                data = {}
+                orig_data = {}
+            display_course(subject, subject_name, number, name, data, orig_data, course_details)
 
 def bl():
     text = query.building_list()
     buildings = extract.building_list(text)
-    columns = [
-        Column("code", "{:<8}"),
-        Column("name", "{}"),
-    ]
-    for b in buildings:
-        row = [b['building_code'], b['building_name']]
-        for c, d in zip(columns, row):
-            print(c.row(d), end=" ")
-        print(flush=True)
+    display_buildings(buildings)
 
 
 def cgs(term, building, room):
